@@ -12,7 +12,8 @@
 这是一个纯前端单文件工具，用于批量提取和汇总结算单数据。支持两种类型的结算单：
 - **Blended Settlement Report（通用结算单）**
 - **IC++ Settlement Report（IC++ 结算单）**
-
+**当前版本：v2 – 优化输出结果中关于日期问题**
+  
 ### 功能特点
 
 - 支持多文件批量上传
@@ -95,7 +96,8 @@ MIT License
 This is a single-file pure frontend tool for batch extraction and consolidation of settlement report data. It supports two types of settlement reports:
 - **Blended Settlement Report**
 - **IC++ Settlement Report**
-
+**Latest Version: v2 – Improved Date format in output**
+  
 ### Features
 
 - Batch file upload support
