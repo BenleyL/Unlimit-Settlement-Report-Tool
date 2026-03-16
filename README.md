@@ -97,6 +97,7 @@ MIT License
 This is a single-file pure frontend tool for batch extraction and consolidation of settlement report data. It supports two types of settlement reports:
 - **Blended Settlement Report**
 - **IC++ Settlement Report**
+  
 **Latest Version: v2 – Improved Date format in output**
   
 ### Features
