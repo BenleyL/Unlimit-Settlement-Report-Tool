@@ -1,0 +1,2771 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>集成报表提取工具 / Integrated Report Extraction Tool</title>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            color: #333;
+            line-height: 1.6;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        
+        header {
+            background: linear-gradient(90deg, #4b6cb7 0%, #182848 100%);
+            color: white;
+            padding: 25px 30px;
+            text-align: center;
+        }
+        
+        h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+        
+        .subtitle {
+            font-size: 16px;
+            opacity: 0.9;
+        }
+        
+        .lang-switcher {
+            text-align: center;
+            margin-bottom: 20px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+        
+        .lang-btn {
+            background: #4b6cb7;
+            border: none;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            margin: 0 5px;
+            transition: background 0.3s;
+        }
+        
+        .lang-btn:hover {
+            background: #3a5999;
+        }
+        
+        .lang-btn.active {
+            background: #2c3e50;
+        }
+        
+        .report-type-selector {
+            text-align: center;
+            margin-bottom: 20px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+        
+        .type-btn {
+            background: #4b6cb7;
+            border: none;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            margin: 0 5px;
+            transition: background 0.3s;
+        }
+        
+        .type-btn:hover {
+            background: #3a5999;
+        }
+        
+        .type-btn.active {
+            background: #2c3e50;
+        }
+        
+        .content {
+            padding: 30px;
+        }
+        
+        .section {
+            margin-bottom: 30px;
+            padding: 25px;
+            background: #f9fafc;
+            border-radius: 8px;
+            border-left: 4px solid #4b6cb7;
+        }
+        
+        h2 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+            font-size: 22px;
+            display: flex;
+            align-items: center;
+        }
+        
+        h2 i {
+            margin-right: 10px;
+            color: #4b6cb7;
+        }
+        
+        .step {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+            font-size: 16px;
+        }
+        
+        .step-number {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 30px;
+            height: 30px;
+            background: #4b6cb7;
+            color: white;
+            border-radius: 50%;
+            margin-right: 10px;
+            font-weight: bold;
+        }
+        
+        .file-input {
+            margin: 20px 0;
+            padding: 15px;
+            border: 2px dashed #a0aec0;
+            border-radius: 8px;
+            text-align: center;
+            background: #f7fafc;
+            transition: all 0.3s;
+            position: relative;
+            min-height: 120px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .file-input:hover, .file-input.drag-over {
+            border-color: #4b6cb7;
+            background: #edf2f7;
+        }
+        
+        .file-input input {
+            width: 100%;
+            padding: 10px;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            cursor: pointer;
+        }
+        
+        .file-label {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            pointer-events: none;
+        }
+        
+        .file-label i {
+            font-size: 36px;
+            color: #4b6cb7;
+            margin-bottom: 10px;
+        }
+        
+        .file-label span {
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .file-label small {
+            font-size: 12px;
+            color: #718096;
+        }
+        
+        .selected-files {
+            margin-top: 15px;
+            font-size: 14px;
+            color: #4a5568;
+        }
+        
+        .buttons {
+            display: flex;
+            gap: 15px;
+            margin: 25px 0;
+            flex-wrap: wrap;
+        }
+        
+        button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        button i {
+            margin-right: 8px;
+        }
+        
+        .btn-primary {
+            background: #4b6cb7;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #3a5999;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .btn-success {
+            background: #38a169;
+            color: white;
+        }
+        
+        .btn-success:hover {
+            background: #2f855a;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .btn-secondary {
+            background: #718096;
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background: #4a5568;
+        }
+        
+        button:disabled {
+            background: #a0aec0;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        
+        .summary {
+            background: #e6fffa;
+            border-left: 4px solid #38a169;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 20px 0;
+            display: none;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            display: none;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+        }
+        
+        th, td {
+            border: 1px solid #e2e8f0;
+            padding: 12px 15px;
+            text-align: left;
+        }
+        
+        th {
+            background: #4b6cb7;
+            color: white;
+            font-weight: 600;
+            position: sticky;
+            top: 0;
+        }
+        
+        tr:nth-child(even) {
+            background: #f7fafc;
+        }
+        
+        tr:hover {
+            background: #edf2f7;
+        }
+        
+        .scroll-container {
+            max-height: 500px;
+            overflow: auto;
+            margin: 20px 0;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            display: none;
+        }
+        
+        /* 金额汇总表格样式 */
+        .amount-table {
+            min-width: 1800px;
+            font-size: 12px;
+        }
+        
+        .amount-table th {
+            background-color: #f1f5fd;
+            color: #2c3e50;
+            font-weight: 600;
+            padding: 10px 6px;
+            text-align: left;
+            border-bottom: 2px solid #e1e7f0;
+            white-space: nowrap;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        
+        .amount-table td {
+            padding: 8px 6px;
+            border-bottom: 1px solid #eef0f5;
+            vertical-align: top;
+        }
+        
+        .amount-cell {
+            text-align: right;
+            font-family: 'Courier New', monospace;
+            font-weight: 500;
+        }
+        
+        .site-cell {
+            max-width: 200px;
+            word-break: break-all;
+            white-space: normal;
+        }
+
+        .reserve-row {
+            background-color: #f8f9fa;
+        }
+
+        .reserve-row:hover {
+            background-color: #f0f4ff;
+        }
+
+        .negative-amount {
+            color: #dc3545;
+        }
+
+        .percent-cell {
+            text-align: center;
+            font-weight: 500;
+        }
+        
+        .tabs-container {
+            margin-top: 20px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        
+        .tabs-header {
+            display: flex;
+            background: #f8f9fa;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        
+        .tab-btn {
+            padding: 12px 20px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            color: #4a5568;
+            border-right: 1px solid #e2e8f0;
+            transition: all 0.3s;
+        }
+        
+        .tab-btn:hover {
+            background: #edf2f7;
+        }
+        
+        .tab-btn.active {
+            background: white;
+            color: #4b6cb7;
+            border-bottom: 2px solid #4b6cb7;
+        }
+        
+        .tab-content {
+            display: none;
+            padding: 20px;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #7a8aa0;
+        }
+        
+        .empty-state i {
+            font-size: 48px;
+            margin-bottom: 15px;
+            color: #c1c9d6;
+        }
+        
+        .export-buttons {
+            margin-top: 20px;
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+        
+        footer {
+            text-align: center;
+            padding: 20px;
+            color: #718096;
+            font-size: 14px;
+            border-top: 1px solid #e2e8f0;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                border-radius: 0;
+            }
+            
+            .content {
+                padding: 15px;
+            }
+            
+            .buttons {
+                flex-direction: column;
+            }
+            
+            button {
+                width: 100%;
+            }
+            
+            .scroll-container {
+                max-height: 400px;
+            }
+            
+            .tabs-header {
+                flex-direction: column;
+            }
+            
+            .tab-btn {
+                border-right: none;
+                border-bottom: 1px solid #e2e8f0;
+            }
+        }
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1 id="title">集成报表提取工具</h1>
+            <p class="subtitle" id="subtitle">支持通用结算单和IC++结算单数据提取</p>
+        </header>
+        
+        <div class="content">
+            <div class="lang-switcher">
+                <button class="lang-btn active" id="lang-zh">中文</button>
+                <button class="lang-btn" id="lang-en">English</button>
+            </div>
+            
+            <div class="report-type-selector">
+                <button class="type-btn active" id="type-general">通用结算单 (General Report)</button>
+                <button class="type-btn" id="type-icplus">IC++ 结算单</button>
+            </div>
+            
+            <!-- General Report Section -->
+            <div id="general-section" class="section">
+                <h2><i>📋</i> <span id="section1-title">通用结算单提取</span></h2>
+                <div class="step">
+                    <span class="step-number">1</span>
+                    <span id="step1">选择包含通用结算单的Excel文件（可多选）</span>
+                </div>
+                <div class="step">
+                    <span class="step-number">2</span>
+                    <span id="step2">点击"预览数据"按钮查看提取结果</span>
+                </div>
+                <div class="step">
+                    <span class="step-number">3</span>
+                    <span id="step3">选择报表类型并点击"导出Excel"按钮下载汇总文件</span>
+                </div>
+                
+                <div class="file-input" id="generalFileInputArea">
+                    <div class="file-label">
+                        <i>📁</i>
+                        <span id="generalFileLabel">选择文件</span>
+                        <small id="generalFileSmall">拖拽文件到此处或点击选择文件</small>
+                    </div>
+                    <input type="file" id="generalFileInput" multiple accept=".xlsx">
+                    <div class="selected-files" id="generalSelectedFiles"></div>
+                </div>
+                
+                <div class="buttons">
+                    <button class="btn-primary" onclick="previewGeneralData()" id="previewGeneralBtn">
+                        <i>👁️</i> <span id="previewGeneralText">预览数据</span>
+                    </button>
+                    <button class="btn-success" onclick="downloadGeneralExcel()" id="downloadGeneralBtn" style="display:none">
+                        <i>📥</i> <span id="downloadGeneralText">导出Excel</span>
+                    </button>
+                    <button class="btn-secondary" onclick="resetGeneralTool()" id="resetGeneralBtn">
+                        <i>🔄</i> <span id="resetGeneralText">重置工具</span>
+                    </button>
+                </div>
+                
+                <div class="summary" id="generalSummary">
+                    <strong id="generalSummaryText">已提取 0 条记录</strong>
+                </div>
+                
+                <!-- 新增：报表类型切换 -->
+                <div id="reportTabs" style="display: none;">
+                    <div class="tabs-container">
+                        <div class="tabs-header">
+                            <button class="tab-btn active" onclick="switchTab('transactions')" id="tab-transactions-btn">
+                                <span id="tab-transactions-text">结算单交易汇总</span>
+                            </button>
+                            <button class="tab-btn" onclick="switchTab('amount')" id="tab-amount-btn">
+                                <span id="tab-amount-text">结算单金额汇总</span>
+                            </button>
+                        </div>
+                        <div class="tab-content active" id="tab-transactions">
+                            <div class="scroll-container" id="generalTableContainer">
+                                <table id="generalPreviewTable">
+                                    <thead id="generalTableHeader">
+                                        <!-- Table headers will be generated dynamically -->
+                                    </thead>
+                                    <tbody id="generalTableBody">
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="export-buttons">
+                                <button class="btn-success" onclick="downloadTransactionsExcel()" id="downloadTransactionsBtn">
+                                    <i>📥</i> <span id="downloadTransactionsText">导出交易汇总Excel</span>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="tab-content" id="tab-amount">
+                            <div class="scroll-container" id="amountTableContainer">
+                                <table class="amount-table" id="amountPreviewTable">
+                                    <thead>
+                                        <tr>
+                                            <th>Settlement ID</th> 
+                                            <th>Processing Period</th>
+                                            <th>Wallet ID</th>
+                                            <th>Processing Currency</th>
+                                            <th>TRANSACTION TOTAL AMOUNT</th>
+                                            <th>Settlement Currency</th>
+                                            <th>SETTLEMENT TOTAL AMOUNT</th>
+                                            <th>TOTAL ACQUIRER FEE</th>
+                                            <th>TOTAL NET AMOUNT</th>
+                                            <th>Rolling Reserve held</th>
+                                            <th>Rolling Reserve released</th>
+                                            <th>Rolling Reserve released Period</th>
+                                            <th>Wire fee</th>
+                                            <th>Other</th>
+                                            <th>GRAND TOTAL</th>
+                                            <th>Site</th>
+                                            <th>Source File</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="amountTableBody">
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="export-buttons">
+                                <button class="btn-success" onclick="downloadAmountExcel()" id="downloadAmountBtn">
+                                    <i>📥</i> <span id="downloadAmountText">导出金额汇总Excel</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- IC++ Report Section -->
+            <div id="icplus-section" class="section" style="display:none">
+                <h2><i>📋</i> <span id="section2-title">IC++ 结算单提取</span></h2>
+                <div class="step">
+                    <span class="step-number">1</span>
+                    <span id="step4">选择包含IC++结算单的Excel文件（可多选）</span>
+                </div>
+                <div class="step">
+                    <span class="step-number">2</span>
+                    <span id="step5">点击"预览交易信息"按钮查看提取结果</span>
+                </div>
+                <div class="step">
+                    <span class="step-number">3</span>
+                    <span id="step6">选择报表类型并点击"导出Excel"按钮下载汇总文件</span>
+                </div>
+
+                <div class="file-input" id="icplusFileInputArea">
+                    <div class="file-label">
+                        <i>📁</i>
+                        <span id="icplusFileLabel">选择文件</span>
+                        <small id="icplusFileSmall">拖拽文件到此处或点击选择文件</small>
+                    </div>
+                    <input type="file" id="icplusFileInput" multiple accept=".xlsx">
+                    <div class="selected-files" id="icplusSelectedFiles"></div>
+                </div>
+
+                <div class="buttons">
+                    <button class="btn-primary" onclick="previewTransactions()" id="previewIcplusBtn">
+                        <i>👁️</i> <span id="previewIcplusText">预览交易信息</span>
+                    </button>
+                    <button class="btn-success" onclick="downloadIcplusExcel()" id="downloadIcplusBtn" style="display:none">
+                        <i>📥</i> <span id="downloadIcplusText">导出Excel</span>
+                    </button>
+                    <button class="btn-secondary" onclick="resetIcplusTool()" id="resetIcplusBtn">
+                        <i>🔄</i> <span id="resetIcplusText">重置工具</span>
+                    </button>
+                </div>
+
+                <div class="summary" id="icplusSummary">
+                    <strong id="icplusSummaryText">已提取 0 条交易记录</strong>
+                </div>
+
+                <!-- IC++报表类型切换 -->
+                <div id="icplusReportTabs" style="display: none;">
+                    <div class="tabs-container">
+                        <div class="tabs-header">
+                            <button class="tab-btn active" onclick="switchIcplusTab('transactions')" id="icplus-tab-transactions-btn">
+                                <span id="icplus-tab-transactions-text">结算单交易汇总</span>
+                            </button>
+                            <button class="tab-btn" onclick="switchIcplusTab('amount')" id="icplus-tab-amount-btn">
+                                <span id="icplus-tab-amount-text">结算单金额汇总</span>
+                            </button>
+                        </div>
+                        <div class="tab-content active" id="icplus-tab-transactions">
+                            <div class="scroll-container" id="icplusTableContainer">
+                                <table id="icplusPreviewTable">
+                                    <thead>
+                                        <tr>
+                                            <th>Order ID</th><th>Date</th><th>Type</th><th>Transaction Amount</th>
+                                            <th>Transaction Currency</th><th>Settlement Amount</th><th>Settlement Currency</th>
+                                            <th>Interchange Fee</th><th>Scheme Fee</th><th>Acquirer Fee</th><th>Fees</th>
+                                            <th>Net Amount</th><th>Card Brand</th><th>Card Product</th><th>Card Number</th>
+                                            <th>Card Holder</th><th>Card Issuer</th><th>Card Country</th><th>Customer Country</th>
+                                            <th>3DS</th><th>MerchantOrderID</th><th>ARN</th><th>Wallet ID</th><th>Region</th>
+                                            <th>Details</th><th>Settlement ID</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="icplusTableBody">
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="export-buttons">
+                                <button class="btn-success" onclick="downloadIcplusTransactionExcel()" id="downloadIcplusTransactionsBtn">
+                                    <i>📥</i> <span id="downloadIcplusTransactionsText">导出交易汇总Excel</span>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="tab-content" id="icplus-tab-amount">
+                            <div class="scroll-container" id="icplusAmountTableContainer">
+                                <table class="amount-table" id="icplusAmountPreviewTable">
+                                    <thead>
+                                        <tr>
+                                            <th>Settlement ID</th>
+                                            <th>Settlement Date</th>
+                                            <th>Processing Period</th>
+                                            <th>Wallet ID</th>
+                                            <th>Processing Currency</th>
+                                            <th>Transaction Amount</th>
+                                            <th>Settlement Currency</th>
+                                            <th>Settlement Amount</th>
+                                            <th>Interchange Fee</th>
+                                            <th>Scheme Fee</th>
+                                            <th>Acquirer Fee</th>
+                                            <th>TOTAL NET AMOUNT</th>
+                                            <th>RR%</th>
+                                            <th>Rolling Reserve held</th>
+                                            <th>Rolling Reserve released</th>
+                                            <th>Rolling Reserve released Period</th>
+                                            <th>Wire fee</th>
+                                            <th>Other</th>
+                                            <th>GRAND TOTAL</th>
+                                            <th>Site</th>
+                                            <th>Source File</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="icplusAmountTableBody">
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="export-buttons">
+                                <button class="btn-success" onclick="downloadIcplusAmountExcel()" id="downloadIcplusAmountBtn">
+                                    <i>📥</i> <span id="downloadIcplusAmountText">导出金额汇总Excel</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <footer>
+            <p id="footerText">集成报表提取工具 &copy; 2025</p>
+        </footer>
+    </div>
+
+    <script>
+        // 中英文文本资源
+        const translations = {
+            zh: {
+                title: "集成报表提取工具",
+                subtitle: "支持通用结算单和IC++结算单数据提取",
+                "section1-title": "通用结算单提取",
+                "section2-title": "IC++ 结算单提取",
+                step1: "选择包含通用结算单的Excel文件（可多选）",
+                step2: "点击\"预览数据\"按钮查看提取结果",
+                step3: "选择报表类型并点击\"导出Excel\"按钮下载汇总文件",
+                step4: "选择包含IC++结算单的Excel文件（可多选）",
+                step5: "点击\"预览交易信息\"按钮查看提取结果",
+                step6: "点击\"导出Excel\"按钮下载汇总文件",
+                previewGeneralText: "预览数据",
+                downloadGeneralText: "导出Excel",
+                resetGeneralText: "重置工具",
+                previewIcplusText: "预览交易信息",
+                downloadIcplusText: "导出 Excel",
+                resetIcplusText: "重置工具",
+                generalSummaryText: "已提取 0 条记录",
+                icplusSummaryText: "已提取 0 条交易记录",
+                footerText: "集成报表提取工具 © 2025",
+                noFileAlert: "请先选择文件",
+                noDataAlert: "没有可导出的数据",
+                successAlert: "共提取了 {count} 条记录",
+                selectFileText: "选择文件",
+                dragDropText: "拖拽文件到此处或点击选择文件",
+                generalReportBtn: "通用结算单 (General Report)",
+                icplusReportBtn: "IC++ 结算单",
+                "tab-transactions-text": "结算单交易汇总",
+                "tab-amount-text": "结算单金额汇总",
+                downloadTransactionsText: "导出交易汇总Excel",
+                downloadAmountText: "导出金额汇总Excel",
+                "icplus-tab-transactions-text": "结算单交易汇总",
+                "icplus-tab-amount-text": "结算单金额汇总",
+                "downloadIcplusTransactionsText": "导出交易汇总Excel",
+                "downloadIcplusAmountText": "导出金额汇总Excel"
+            },
+            en: {
+                title: "Integrated Report Extraction Tool",
+                subtitle: "Supports Blended Settlement Report and IC++ Report data extraction",
+                "section1-title": "Blended Settlement Report Extraction",
+                "section2-title": "IC++ Report Extraction",
+                step1: "Upload Report files containing blended settlement data (multiple selection allowed)",
+                step2: "Click \"Preview Data\" button to view extraction results",
+                step3: "Select report type and click \"Export Excel\" button to download consolidated file",
+                step4: "Upload Report files containing IC++ settlement data (multiple selection allowed)",
+                step5: "Click \"Preview Transactions\" button to view extraction results",
+                step6: "Click \"Export Excel\" button to download consolidated file",
+                previewGeneralText: "Preview Data",
+                downloadGeneralText: "Export Excel",
+                resetGeneralText: "Reset Tool",
+                previewIcplusText: "Preview Transactions",
+                downloadIcplusText: "Export Excel",
+                resetIcplusText: "Reset Tool",
+                generalSummaryText: "Extracted 0 records",
+                icplusSummaryText: "Extracted 0 transaction records",
+                footerText: "Integrated Report Extraction Tool © 2025",
+                noFileAlert: "Please upload report files first",
+                noDataAlert: "No data available for export",
+                successAlert: "Extracted {count} records in total",
+                selectFileText: "Upload Report",
+                dragDropText: "Drag & drop files here or click to browse",
+                generalReportBtn: "Blended Settlement Report",
+                icplusReportBtn: "IC++ Report",
+                "tab-transactions-text": "Settlement Transactions Report",
+                "tab-amount-text": "Settlement Report Amt Report",
+                downloadTransactionsText: "Export Transactions Excel",
+                downloadAmountText: "Export Amount Report Excel",
+                "icplus-tab-transactions-text": "Settlement Transactions Report",
+                "icplus-tab-amount-text": "Settlement Amount Report",
+                "downloadIcplusTransactionsText": "Export Transactions Excel",
+                "downloadIcplusAmountText": "Export Amount Report Excel"
+            }
+        };
+
+        // 当前语言和报表类型
+        let currentLang = 'zh';
+        let currentReportType = 'general';
+        let currentTab = 'transactions';
+        let currentIcplusTab = 'transactions';
+        
+        // 切换语言函数
+        function switchLanguage(lang) {
+            currentLang = lang;
+            
+            // 更新按钮状态
+            document.getElementById('lang-zh').classList.toggle('active', lang === 'zh');
+            document.getElementById('lang-en').classList.toggle('active', lang === 'en');
+            
+            // 更新所有文本
+            for (const key in translations[lang]) {
+                const elements = document.querySelectorAll(`[id="${key}"]`);
+                elements.forEach(el => {
+                    el.textContent = translations[lang][key];
+                });
+                
+                // 特殊处理报表类型按钮
+                if (key === 'generalReportBtn') {
+                    document.getElementById('type-general').textContent = translations[lang][key];
+                }
+                if (key === 'icplusReportBtn') {
+                    document.getElementById('type-icplus').textContent = translations[lang][key];
+                }
+                if (key === 'selectFileText') {
+                    document.getElementById('generalFileLabel').textContent = translations[lang][key];
+                    document.getElementById('icplusFileLabel').textContent = translations[lang][key];
+                }
+                if (key === 'dragDropText') {
+                    document.getElementById('generalFileSmall').textContent = translations[lang][key];
+                    document.getElementById('icplusFileSmall').textContent = translations[lang][key];
+                }
+            }
+        }
+        
+        // 切换报表类型
+        function switchReportType(type) {
+            currentReportType = type;
+            
+            // 更新按钮状态
+            document.getElementById('type-general').classList.toggle('active', type === 'general');
+            document.getElementById('type-icplus').classList.toggle('active', type === 'icplus');
+            
+            // 显示/隐藏对应部分
+            document.getElementById('general-section').style.display = type === 'general' ? 'block' : 'none';
+            document.getElementById('icplus-section').style.display = type === 'icplus' ? 'block' : 'none';
+        }
+        
+        // 切换标签页
+        function switchTab(tabName) {
+            currentTab = tabName;
+
+            // 更新标签按钮状态
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.getElementById(`tab-${tabName}-btn`).classList.add('active');
+
+            // 更新标签内容
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            document.getElementById(`tab-${tabName}`).classList.add('active');
+        }
+
+        // 切换IC++标签页
+        function switchIcplusTab(tabName) {
+            currentIcplusTab = tabName;
+
+            // 更新标签按钮状态
+            document.querySelectorAll('#icplusReportTabs .tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.getElementById(`icplus-tab-${tabName}-btn`).classList.add('active');
+
+            // 更新标签内容
+            document.querySelectorAll('#icplusReportTabs .tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            document.getElementById(`icplus-tab-${tabName}`).classList.add('active');
+        }
+        
+        // 初始化语言切换和报表类型切换
+        document.getElementById('lang-zh').addEventListener('click', () => switchLanguage('zh'));
+        document.getElementById('lang-en').addEventListener('click', () => switchLanguage('en'));
+        document.getElementById('type-general').addEventListener('click', () => switchReportType('general'));
+        document.getElementById('type-icplus').addEventListener('click', () => switchReportType('icplus'));
+        
+        // ==================== 拖拽上传功能 ====================
+        
+        // 初始化拖拽上传功能
+        function initDragDrop() {
+            const fileInputAreas = [
+                { id: 'generalFileInputArea', inputId: 'generalFileInput', filesDisplayId: 'generalSelectedFiles' },
+                { id: 'icplusFileInputArea', inputId: 'icplusFileInput', filesDisplayId: 'icplusSelectedFiles' }
+            ];
+            
+            fileInputAreas.forEach(area => {
+                const dropArea = document.getElementById(area.id);
+                const fileInput = document.getElementById(area.inputId);
+                const filesDisplay = document.getElementById(area.filesDisplayId);
+                
+                // 防止默认拖拽行为
+                ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                    dropArea.addEventListener(eventName, preventDefaults, false);
+                    document.body.addEventListener(eventName, preventDefaults, false);
+                });
+                
+                // 高亮拖拽区域
+                ['dragenter', 'dragover'].forEach(eventName => {
+                    dropArea.addEventListener(eventName, highlight, false);
+                });
+                
+                ['dragleave', 'drop'].forEach(eventName => {
+                    dropArea.addEventListener(eventName, unhighlight, false);
+                });
+                
+                // 处理文件放置
+                dropArea.addEventListener('drop', handleDrop, false);
+                
+                function preventDefaults(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                }
+                
+                function highlight() {
+                    dropArea.classList.add('drag-over');
+                }
+                
+                function unhighlight() {
+                    dropArea.classList.remove('drag-over');
+                }
+                
+                function handleDrop(e) {
+                    const dt = e.dataTransfer;
+                    const files = dt.files;
+                    
+                    if (files.length > 0) {
+                        // 创建新的FileList对象
+                        const dataTransfer = new DataTransfer();
+                        for (let i = 0; i < files.length; i++) {
+                            dataTransfer.items.add(files[i]);
+                        }
+                        fileInput.files = dataTransfer.files;
+                        
+                        // 更新文件显示
+                        updateSelectedFiles(fileInput, filesDisplay);
+                        
+                        // 触发change事件
+                        const event = new Event('change', { bubbles: true });
+                        fileInput.dispatchEvent(event);
+                    }
+                }
+                
+                // 监听文件选择变化
+                fileInput.addEventListener('change', function() {
+                    updateSelectedFiles(this, filesDisplay);
+                });
+            });
+        }
+        
+        // 更新选择的文件显示
+        function updateSelectedFiles(fileInput, filesDisplay) {
+            const files = Array.from(fileInput.files);
+            if (files.length === 0) {
+                filesDisplay.textContent = '';
+                return;
+            }
+            
+            const fileNames = files.map(file => file.name).join(', ');
+            if (files.length === 1) {
+                filesDisplay.textContent = currentLang === 'zh' 
+                    ? `已选择: ${fileNames}`
+                    : `Selected: ${fileNames}`;
+            } else {
+                filesDisplay.textContent = currentLang === 'zh'
+                    ? `已选择 ${files.length} 个文件: ${fileNames.substring(0, 50)}${fileNames.length > 50 ? '...' : ''}`
+                    : `Selected ${files.length} files: ${fileNames.substring(0, 50)}${fileNames.length > 50 ? '...' : ''}`;
+            }
+        }
+        
+        // ==================== 数据格式化函数 ====================
+        
+        /** Excel 日期转换为格式化日期字符串（用于显示和导出）- 保持UTC时间并保留原格式 */
+        function formatExcelDate(excelDate) {
+            if (!excelDate || excelDate === '') return '';
+
+            // 如果是数字，则是Excel日期格式
+            if (typeof excelDate === 'number') {
+                const date = new Date((excelDate - 25569) * 86400 * 1000);
+                // 使用UTC时间格式化，避免时区转换，不补零
+                const year = date.getUTCFullYear();
+                const month = date.getUTCMonth() + 1;
+                const day = date.getUTCDate();
+                const hours = date.getUTCHours();
+                const minutes = date.getUTCMinutes();
+                const seconds = date.getUTCSeconds();
+
+                return `${year}/${month}/${day} ${hours}:${minutes}:${seconds}`;
+            }
+
+            // 如果已经是日期字符串，直接返回
+            return excelDate;
+        }
+        
+        /** 格式化数字，保留2位小数（用于显示） */
+        function formatNumber(value) {
+            if (value === null || value === undefined || value === '') return '';
+            
+            const num = parseFloat(value);
+            if (isNaN(num)) return value;
+            
+            // 保留2位小数
+            return num.toFixed(2);
+        }
+        
+        /** 格式化大数字，添加千分位分隔符（用于显示） */
+        function formatLargeNumber(value) {
+            if (value === null || value === undefined || value === '') return '';
+            
+            const num = parseFloat(value);
+            if (isNaN(num)) return value;
+            
+            // 保留2位小数并添加千分位分隔符
+            return num.toLocaleString('en-US', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            });
+        }
+        
+        /** 格式化数字用于导出，确保Excel能识别为数字 */
+        function formatNumberForExport(value) {
+            if (value === null || value === undefined || value === '') return '';
+            
+            const num = parseFloat(value);
+            if (isNaN(num)) return value;
+            
+            // 返回数字类型，Excel会自动识别
+            return num;
+        }
+        
+        // ==================== 金额汇总相关函数 ====================
+        
+        /** 清理数字字符串为纯数字（用于导出） */
+        function cleanNumberForExport(value) {
+            if (!value && value !== 0) return null;
+            
+            const strValue = String(value).trim();
+            if (strValue === '') return null;
+            
+            // 移除所有非数字字符（保留负号和小数点）
+            const cleanValue = strValue.replace(/[^\d.-]/g, '');
+            
+            // 如果是空字符串，返回null
+            if (cleanValue === '' || cleanValue === '-') return null;
+            
+            // 解析为数值
+            const num = parseFloat(cleanValue);
+            return isNaN(num) ? null : num;
+        }
+        
+        /** 从工作表中提取结算单信息（用于金额汇总） */
+        function extractInfoFromSheet(sheetData, fileName, sheetName) {
+            const infoList = [];
+            const baseInfo = {
+                settlementId: '',
+                capturedPeriod: '',
+                walletId: '',
+                processingCurrency: '',
+                transactionTotalAmount: '',
+                settlementCurrency: '',
+                settlementTotalAmount: '',
+                totalAcquirerFee: '',
+                totalNetAmount: '',
+                rollingReserveHeld: '',
+                rollingReserveReleased: '',
+                reserveReleasedPeriod: '',
+                wireFee: '',
+                otherFee: '',
+                grandTotal: '',
+                site: '',
+                sourceFile: fileName,
+                sheetName: sheetName,
+                isReserveRelease: false
+            };
+            
+            let foundData = false;
+            const reserveReleases = [];
+            
+            for (let rowIndex = 0; rowIndex < sheetData.length; rowIndex++) {
+                const row = sheetData[rowIndex];
+                if (!row || row.length === 0) continue;
+                
+                for (let colIndex = 0; colIndex < row.length; colIndex++) {
+                    const cell = row[colIndex];
+                    const cellStr = String(cell).trim();
+                    
+                    if (!cellStr) continue;
+                    
+                    // 1. 提取Settlement ID
+                    if (cellStr.includes('Settlement ID:')) {
+                        const match = cellStr.match(/Settlement ID:\s*([^\s]+)/i);
+                        if (match && match[1]) {
+                            baseInfo.settlementId = match[1].trim();
+                            foundData = true;
+                        } else {
+                            if (colIndex + 1 < row.length) {
+                                const nextCell = row[colIndex + 1];
+                                if (nextCell && String(nextCell).trim()) {
+                                    baseInfo.settlementId = String(nextCell).trim();
+                                    foundData = true;
+                                }
+                            }
+                        }
+                    }
+                    
+                    // 2. 提取Captured Period
+                    if (cellStr.includes('Captured Period:')) {
+                        const match = cellStr.match(/Captured Period:\s*(.+)/i);
+                        if (match && match[1]) {
+                            let dateStr = match[1].trim();
+                            dateStr = dateStr.replace(/\s\d{2}:\d{2}/g, '');
+                            baseInfo.capturedPeriod = dateStr;
+                            foundData = true;
+                        } else {
+                            if (colIndex + 1 < row.length) {
+                                const nextCell = row[colIndex + 1];
+                                if (nextCell && String(nextCell).trim()) {
+                                    let dateStr = String(nextCell).trim();
+                                    dateStr = dateStr.replace(/\s\d{2}:\d{2}/g, '');
+                                    baseInfo.capturedPeriod = dateStr;
+                                    foundData = true;
+                                }
+                            }
+                        }
+                    }
+                    
+                    // 3. 提取Wallet ID
+                    if (cellStr.includes('Wallet ID:')) {
+                        if (colIndex + 1 < row.length) {
+                            const nextCell = row[colIndex + 1];
+                            if (nextCell && String(nextCell).trim()) {
+                                baseInfo.walletId = String(nextCell).trim();
+                                foundData = true;
+                            }
+                        }
+                    }
+                    
+                    // 4. 提取Processing Currency
+                    if (cellStr.includes('Processing Currency:')) {
+                        const match = cellStr.match(/Processing Currency:\s*([^\s]+)/i);
+                        if (match && match[1]) {
+                            baseInfo.processingCurrency = match[1].trim();
+                            foundData = true;
+                        } else {
+                            if (colIndex + 1 < row.length) {
+                                const nextCell = row[colIndex + 1];
+                                if (nextCell && String(nextCell).trim()) {
+                                    baseInfo.processingCurrency = String(nextCell).trim();
+                                    foundData = true;
+                                }
+                            }
+                        }
+                    }
+                    
+                    // 5. 提取TRANSACTION TOTAL AMOUNT
+                    if (cellStr.includes('TRANSACTION TOTAL AMOUNT')) {
+                        for (let i = colIndex + 1; i < row.length; i++) {
+                            const valueCell = row[i];
+                            if (valueCell !== null && valueCell !== undefined && valueCell !== '') {
+                                const cellValue = String(valueCell).trim();
+                                baseInfo.transactionTotalAmount = cellValue;
+                                foundData = true;
+                                break;
+                            }
+                        }
+                    }
+                    
+                    // 6. 提取Settlement Currency
+                    if (cellStr.includes('Settlement Currency:')) {
+                        const match = cellStr.match(/Settlement Currency:\s*([^\s]+)/i);
+                        if (match && match[1]) {
+                            baseInfo.settlementCurrency = match[1].trim();
+                            foundData = true;
+                        } else {
+                            if (colIndex + 1 < row.length) {
+                                const nextCell = row[colIndex + 1];
+                                if (nextCell && String(nextCell).trim()) {
+                                    baseInfo.settlementCurrency = String(nextCell).trim();
+                                    foundData = true;
+                                }
+                            }
+                        }
+                    }
+                    
+                    // 7. 提取SETTLEMENT TOTAL AMOUNT
+                    if (cellStr.includes('SETTLEMENT TOTAL AMOUNT')) {
+                        for (let i = colIndex + 1; i < row.length; i++) {
+                            const valueCell = row[i];
+                            if (valueCell !== null && valueCell !== undefined && valueCell !== '') {
+                                const cellValue = String(valueCell).trim();
+                                baseInfo.settlementTotalAmount = cellValue;
+                                foundData = true;
+                                break;
+                            }
+                        }
+                    }
+                    
+                    // 8. 提取TOTAL ACQUIRER FEE
+                    if (cellStr.includes('TOTAL ACQUIRER FEE')) {
+                        for (let i = colIndex + 1; i < row.length; i++) {
+                            const valueCell = row[i];
+                            if (valueCell !== null && valueCell !== undefined && valueCell !== '') {
+                                const cellValue = String(valueCell).trim();
+                                baseInfo.totalAcquirerFee = cellValue;
+                                foundData = true;
+                                break;
+                            }
+                        }
+                    }
+                    
+                    // 9. 提取TOTAL NET AMOUNT
+                    if (cellStr.includes('TOTAL NET AMOUNT')) {
+                        for (let i = colIndex + 1; i < row.length; i++) {
+                            const valueCell = row[i];
+                            if (valueCell !== null && valueCell !== undefined && valueCell !== '') {
+                                const cellValue = String(valueCell).trim();
+                                baseInfo.totalNetAmount = cellValue;
+                                foundData = true;
+                                break;
+                            }
+                        }
+                    }
+                    
+                    // 10. 提取Rolling Reserve held
+                    if (cellStr.includes('Rolling Reserve held')) {
+                        for (let i = colIndex + 1; i < row.length; i++) {
+                            const valueCell = row[i];
+                            if (valueCell !== null && valueCell !== undefined && valueCell !== '') {
+                                const cellValue = String(valueCell).trim();
+                                baseInfo.rollingReserveHeld = cellValue;
+                                foundData = true;
+                                break;
+                            }
+                        }
+                    }
+                    
+                    // 11. 提取Rolling Reserve released
+                    if (cellStr.includes('Rolling Reserve released')) {
+                        let releaseAmount = '';
+                        let releasePeriod = '';
+                        
+                        // 提取金额
+                        for (let i = colIndex + 1; i < row.length; i++) {
+                            const valueCell = row[i];
+                            if (valueCell !== null && valueCell !== undefined && valueCell !== '') {
+                                const cellValue = String(valueCell).trim();
+                                releaseAmount = cellValue;
+                                break;
+                            }
+                        }
+                        
+                        // 提取期间
+                        const datePattern = /\d{1,2}\.\d{1,2}\.\d{2,4}\s*-\s*\d{1,2}\.\d{1,2}\.\d{2,4}/;
+                        const match = cellStr.match(datePattern);
+                        if (match) {
+                            releasePeriod = match[0];
+                        }
+                        
+                        // 如果有有效的释放记录，添加到数组中
+                        if (releaseAmount || releasePeriod) {
+                            reserveReleases.push({
+                                amount: releaseAmount,
+                                period: releasePeriod
+                            });
+                            foundData = true;
+                        }
+                    }
+                    
+                    // 12. 提取Wire fee
+                    if (cellStr.toLowerCase().includes('wire fee') || cellStr.toLowerCase().includes('wire transfer fee')) {
+                        for (let i = colIndex + 1; i < row.length; i++) {
+                            const valueCell = row[i];
+                            if (valueCell !== null && valueCell !== undefined && valueCell !== '') {
+                                const cellValue = String(valueCell).trim();
+                                baseInfo.wireFee = cellValue;
+                                foundData = true;
+                                break;
+                            }
+                        }
+                    }
+                    
+                    // 13. 提取Correction
+                    if (cellStr.includes('Correction')) {
+                        for (let i = colIndex + 1; i < row.length; i++) {
+                            const valueCell = row[i];
+                            if (valueCell !== null && valueCell !== undefined && valueCell !== '') {
+                                const cellValue = String(valueCell).trim();
+                                baseInfo.otherFee = cellValue;
+                                foundData = true;
+                                break;
+                            }
+                        }
+                    }
+                    
+                    // 14. 提取GRAND TOTAL
+                    if (cellStr.includes('GRAND TOTAL')) {
+                        for (let i = colIndex + 1; i < row.length; i++) {
+                            const valueCell = row[i];
+                            if (valueCell !== null && valueCell !== undefined && valueCell !== '') {
+                                const cellValue = String(valueCell).trim();
+                                baseInfo.grandTotal = cellValue;
+                                foundData = true;
+                                break;
+                            }
+                        }
+                    }
+                    
+                    // 15. 提取Site信息
+                    if (cellStr.includes('Site:')) {
+                        const match = cellStr.match(/Site:\s*(.+)/i);
+                        if (match && match[1]) {
+                            baseInfo.site = match[1].trim();
+                            foundData = true;
+                        } else {
+                            if (colIndex + 1 < row.length) {
+                                const nextCell = row[colIndex + 1];
+                                if (nextCell && String(nextCell).trim()) {
+                                    baseInfo.site = String(nextCell).trim();
+                                    foundData = true;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            
+            // 如果没有找到任何数据，返回null
+            if (!foundData) {
+                return null;
+            }
+            
+            // 如果没有释放的保证金记录，只添加基础记录
+            if (reserveReleases.length === 0) {
+                infoList.push({...baseInfo});
+            } else {
+                // 首先添加基础记录（第一条记录包含所有信息）
+                const firstRelease = reserveReleases[0];
+                const baseRecord = {...baseInfo};
+                baseRecord.rollingReserveReleased = firstRelease.amount;
+                baseRecord.reserveReleasedPeriod = firstRelease.period;
+                infoList.push(baseRecord);
+                
+                // 为其他释放记录添加独立行
+                for (let i = 1; i < reserveReleases.length; i++) {
+                    const reserveRelease = reserveReleases[i];
+                    const reserveRecord = {
+                        ...baseInfo,
+                        rollingReserveReleased: reserveRelease.amount,
+                        reserveReleasedPeriod: reserveRelease.period,
+                        isReserveRelease: true,
+                        // 这些字段在释放记录行中留空
+                        grandTotal: '',
+                        settlementCurrency: '',
+                        settlementTotalAmount: '',
+                        totalAcquirerFee: '',
+                        totalNetAmount: '',
+                        transactionTotalAmount: '',
+                        rollingReserveHeld: '',
+                        wireFee: '',
+                        otherFee: ''
+                    };
+                    infoList.push(reserveRecord);
+                }
+            }
+            
+            return infoList;
+        }
+        
+        // ==================== General Report Functions ====================
+        
+        let gGeneralRows = []; // 保存通用报表数据
+        let gGeneralHeaders = []; // 保存通用报表表头
+        let gAmountData = []; // 保存金额汇总数据
+
+        // IC++ 金额汇总数据
+        let gIcplusAmountData = []; // 保存IC++金额汇总数据
+        
+        /* ---------- 通用报表预览 ---------- */
+        async function previewGeneralData() {
+            const files = Array.from(document.getElementById('generalFileInput').files);
+            if(!files.length){
+                alert(currentLang === 'zh' ? '请先选择文件' : 'Please upload report files first');
+                return;
+            }
+
+            // 重置数据
+            gGeneralRows = [];
+            gAmountData = [];
+            const tbody = document.querySelector('#generalTableBody');
+            tbody.innerHTML = '';
+            const amountTbody = document.querySelector('#amountTableBody');
+            amountTbody.innerHTML = '';
+
+            let processedCount = 0;
+            let totalRecords = 0;
+            let amountRecords = 0;
+
+            for (const file of files){
+                try {
+                    const data = await file.arrayBuffer();
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const sheet = workbook.Sheets[workbook.SheetNames[0]];
+                    const allRows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+                    
+                    // ===== 提取交易数据（原有功能） =====
+                    // 提取 Meta 与 Fee Meta
+                    const meta = extractMeta(allRows);
+                    const feeMeta = extractFee(allRows);
+                    
+                    // 找到数据开始行
+                    const startIndex = allRows.findIndex(row => row.includes("Order ID"));
+                    if (startIndex === -1) {
+                        console.warn(currentLang === 'zh' ? '未找到数据开始行:' : 'Data start row not found:', file.name);
+                    } else {
+                        const cleanRows = allRows.slice(startIndex);
+                        const rawHeaderRow = cleanRows[0].filter(v => v !== "");
+                        const emptyIndexes = cleanRows[0].map((h, i) => h === "" ? i : -1).filter(i => i !== -1);
+                        
+                        // 构建完整表头
+                        const fullHeaderRow = [...rawHeaderRow, ...Object.keys(meta), ...Object.keys(feeMeta)];
+                        
+                        // 如果是第一个文件，设置表头
+                        if (processedCount === 0) {
+                            gGeneralHeaders = fullHeaderRow;
+                            const headerRow = document.createElement('tr');
+                            fullHeaderRow.forEach(header => {
+                                const th = document.createElement('th');
+                                th.textContent = header;
+                                headerRow.appendChild(th);
+                            });
+                            document.getElementById('generalTableHeader').innerHTML = '';
+                            document.getElementById('generalTableHeader').appendChild(headerRow);
+                        }
+                        
+                        // 处理数据行
+                        const dataRows = allRows.slice(startIndex + 1);
+                        
+                        dataRows.forEach((row, r) => {
+                            // 只移除空 header 对应栏位，保留其他空值
+                            const filteredRow = row.filter((v, idx) => !emptyIndexes.includes(idx));
+                            
+                            // 日期转换
+                            const dateColumnsToConvert = ["Date"];
+                            const dateColIndexes = dateColumnsToConvert.map(col => fullHeaderRow.indexOf(col)).filter(i => i !== -1);
+                            
+                            dateColIndexes.forEach(idx => {
+                                if (typeof filteredRow[idx] === "number") {
+                                    filteredRow[idx] = formatExcelDate(filteredRow[idx]);
+                                }
+                            });
+                            
+                            // 只在第一笔资料加入 Meta 与 Fee Meta
+                            const fullRow = [
+                                ...filteredRow,
+                                ...(r === 0 ? Object.keys(meta).map(k => meta[k]) : []),
+                                ...(r === 0 ? Object.keys(feeMeta).map(k => feeMeta[k] || "") : [])
+                            ];
+                            
+                            gGeneralRows.push(fullRow);
+                            totalRecords++;
+
+                            const tr = document.createElement('tr');
+                            fullRow.forEach(v => {
+                                const td = document.createElement('td');
+                                td.textContent = v;
+                                tr.appendChild(td);
+                            });
+                            tbody.appendChild(tr);
+                        });
+                    }
+                    
+                    // ===== 提取金额汇总数据（新功能） =====
+                    for (let sheetIndex = 0; sheetIndex < workbook.SheetNames.length; sheetIndex++) {
+                        const sheetName = workbook.SheetNames[sheetIndex];
+                        const worksheet = workbook.Sheets[sheetName];
+                        
+                        // 将工作表转换为JSON数组
+                        const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: '' });
+                        
+                        // 从工作表数据中提取信息
+                        const sheetInfoList = extractInfoFromSheet(jsonData, file.name, sheetName);
+                        if (sheetInfoList && sheetInfoList.length > 0) {
+                            gAmountData.push(...sheetInfoList);
+                            amountRecords += sheetInfoList.length;
+                        }
+                    }
+                    
+                    processedCount++;
+                    
+                } catch (e) {
+                    console.error(currentLang === 'zh' ? '处理文件出错:' : 'Error processing file:', file.name, e);
+                }
+            }
+
+            // 显示金额汇总表格
+            if (gAmountData.length > 0) {
+                displayAmountTable();
+                document.getElementById('amountTableContainer').style.display = 'block';
+                document.getElementById('amountPreviewTable').style.display = 'table';
+            }
+
+            // 显示交易数据表格
+            if (gGeneralRows.length > 0) {
+                document.getElementById('generalTableContainer').style.display = 'block';
+                document.getElementById('generalPreviewTable').style.display = 'table';
+            }
+
+            // 显示标签页容器
+            document.getElementById('reportTabs').style.display = 'block';
+            
+            // 更新摘要信息
+            const summaryText = currentLang === 'zh' ? 
+                `已提取 ${totalRecords} 条交易记录，${amountRecords} 条金额记录` : 
+                `Extracted ${totalRecords} transaction records, ${amountRecords} amount records`;
+            document.getElementById('generalSummaryText').textContent = summaryText;
+            document.getElementById('generalSummary').style.display = 'block';
+            
+            // 显示下载按钮
+            document.getElementById('downloadGeneralBtn').style.display = 'block';
+            document.getElementById('downloadTransactionsBtn').style.display = 'block';
+            document.getElementById('downloadAmountBtn').style.display = 'block';
+            
+            alert((currentLang === 'zh' ? '共提取了 ' : 'Extracted ') + totalRecords + 
+                  (currentLang === 'zh' ? ' 条交易记录和 ' : ' transaction records and ') + 
+                  amountRecords + (currentLang === 'zh' ? ' 条金额记录' : ' amount records'));
+        }
+        
+        /* ---------- 显示金额汇总表格 ---------- */
+        function displayAmountTable() {
+            const amountTbody = document.querySelector('#amountTableBody');
+            amountTbody.innerHTML = '';
+            
+            gAmountData.forEach((rowData, index) => {
+                const row = document.createElement('tr');
+                
+                // 如果是保证金释放记录行，添加特殊样式
+                if (rowData.isReserveRelease) {
+                    row.className = 'reserve-row';
+                }
+                
+                // Settlement ID - 第一列
+                const td1 = document.createElement('td');
+                td1.textContent = rowData.settlementId || '';
+                row.appendChild(td1);
+                
+                // Processing Period - 第二列
+                const td2 = document.createElement('td');
+                td2.textContent = rowData.capturedPeriod || '';
+                row.appendChild(td2);
+                
+                // Wallet ID - 第三列
+                const td3 = document.createElement('td');
+                td3.textContent = rowData.walletId || '';
+                row.appendChild(td3);
+                
+                // Processing Currency - 第四列
+                const td4 = document.createElement('td');
+                td4.textContent = rowData.processingCurrency || '';
+                row.appendChild(td4);
+                
+                // TRANSACTION TOTAL AMOUNT - 金额格式 - 第五列
+                const td5 = document.createElement('td');
+                td5.className = 'amount-cell';
+                td5.textContent = formatLargeNumber(rowData.transactionTotalAmount) || '';
+                row.appendChild(td5);
+                
+                // Settlement Currency - 第六列
+                const td6 = document.createElement('td');
+                td6.textContent = rowData.settlementCurrency || '';
+                row.appendChild(td6);
+                
+                // SETTLEMENT TOTAL AMOUNT - 金额格式 - 第七列
+                const td7 = document.createElement('td');
+                td7.className = 'amount-cell';
+                td7.textContent = formatLargeNumber(rowData.settlementTotalAmount) || '';
+                row.appendChild(td7);
+                
+                // TOTAL ACQUIRER FEE - 金额格式 - 第八列
+                const td8 = document.createElement('td');
+                td8.className = 'amount-cell';
+                td8.textContent = formatLargeNumber(rowData.totalAcquirerFee) || '';
+                row.appendChild(td8);
+                
+                // TOTAL NET AMOUNT - 金额格式 - 第九列
+                const td9 = document.createElement('td');
+                td9.className = 'amount-cell';
+                td9.textContent = formatLargeNumber(rowData.totalNetAmount) || '';
+                row.appendChild(td9);
+                
+                // Rolling Reserve held - 金额格式 - 第十列
+                const td10 = document.createElement('td');
+                td10.className = 'amount-cell';
+                td10.textContent = formatLargeNumber(rowData.rollingReserveHeld) || '';
+                row.appendChild(td10);
+                
+                // Rolling Reserve released - 金额格式 - 第十一列
+                const td11 = document.createElement('td');
+                td11.className = 'amount-cell';
+                td11.textContent = formatLargeNumber(rowData.rollingReserveReleased) || '';
+                row.appendChild(td11);
+                
+                // Rolling Reserve released Period - 第十二列
+                const td12 = document.createElement('td');
+                td12.textContent = rowData.reserveReleasedPeriod || '';
+                row.appendChild(td12);
+                
+                // Wire fee - 金额格式 - 第十三列
+                const td13 = document.createElement('td');
+                td13.className = 'amount-cell';
+                td13.textContent = formatLargeNumber(rowData.wireFee) || '';
+                row.appendChild(td13);
+                
+                // Other - 金额格式 - 第十四列
+                const td14 = document.createElement('td');
+                td14.className = 'amount-cell';
+                td14.textContent = formatLargeNumber(rowData.otherFee) || '';
+                row.appendChild(td14);
+                
+                // GRAND TOTAL - 金额格式 - 第十五列
+                const td15 = document.createElement('td');
+                td15.className = 'amount-cell';
+                td15.textContent = formatLargeNumber(rowData.grandTotal) || '';
+                row.appendChild(td15);
+                
+                // Site - 第十六列
+                const td16 = document.createElement('td');
+                td16.textContent = rowData.site || '';
+                td16.className = 'site-cell';
+                row.appendChild(td16);
+                
+                // Source File - 第十七列
+                const td17 = document.createElement('td');
+                td17.textContent = rowData.sourceFile || '';
+                td17.style.whiteSpace = 'normal';
+                td17.style.maxWidth = '200px';
+                td17.style.wordBreak = 'break-all';
+                row.appendChild(td17);
+                
+                amountTbody.appendChild(row);
+            });
+        }
+        
+        /* ---------- 通用报表导出（兼容旧版） ---------- */
+        function downloadGeneralExcel() {
+            // 根据当前标签页决定导出哪个报表
+            if (currentTab === 'transactions') {
+                downloadTransactionsExcel();
+            } else {
+                downloadAmountExcel();
+            }
+        }
+        
+        /* ---------- 导出交易汇总 Excel ---------- */
+        function downloadTransactionsExcel() {
+            if(!gGeneralRows.length){
+                alert(currentLang === 'zh' ? '没有可导出的交易数据' : 'No transaction data available for export');
+                return;
+            }
+            
+            // 创建工作表数据 - 使用预览时已经格式化的数据
+            const ws_data = [gGeneralHeaders];
+            
+            // 添加已经格式化好的数据行
+            ws_data.push(...gGeneralRows);
+            
+            // 创建工作表
+            const ws = XLSX.utils.aoa_to_sheet(ws_data);
+            
+            // 创建工作簿
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, 'Blended Report');
+            
+            // 写入文件
+            XLSX.writeFile(wb, "blended_report_transactions.xlsx");
+        }
+        
+        /* ---------- 导出金额汇总 Excel ---------- */
+        function downloadAmountExcel() {
+            if(!gAmountData.length){
+                alert(currentLang === 'zh' ? '没有可导出的金额数据' : 'No amount data available for export');
+                return;
+            }
+            
+            try {
+                // 准备工作表数据
+                const worksheetData = [
+                    // 表头
+                    [
+                        'Settlement ID', 
+                        'Processing Period',
+                        'Wallet ID',
+                        'Processing Currency',
+                        'TRANSACTION TOTAL AMOUNT',
+                        'Settlement Currency',
+                        'SETTLEMENT TOTAL AMOUNT',
+                        'TOTAL ACQUIRER FEE',
+                        'TOTAL NET AMOUNT',
+                        'Rolling Reserve held',
+                        'Rolling Reserve released',
+                        'Rolling Reserve released Period',
+                        'Wire fee',
+                        'Other',
+                        'GRAND TOTAL',
+                        'Site',
+                        'Source File'
+                    ]
+                ];
+                
+                // 添加数据行 - 使用清理后的数字（数值格式）
+                gAmountData.forEach(item => {
+                    worksheetData.push([
+                        item.settlementId || '',
+                        item.capturedPeriod || '',
+                        item.walletId || '',
+                        item.processingCurrency || '',
+                        cleanNumberForExport(item.transactionTotalAmount),
+                        item.settlementCurrency || '',
+                        cleanNumberForExport(item.settlementTotalAmount),
+                        cleanNumberForExport(item.totalAcquirerFee),
+                        cleanNumberForExport(item.totalNetAmount),
+                        cleanNumberForExport(item.rollingReserveHeld),
+                        cleanNumberForExport(item.rollingReserveReleased),
+                        item.reserveReleasedPeriod || '',
+                        cleanNumberForExport(item.wireFee),
+                        cleanNumberForExport(item.otherFee),
+                        cleanNumberForExport(item.grandTotal),
+                        item.site || '',
+                        item.sourceFile || ''
+                    ]);
+                });
+                
+                // 创建工作簿和工作表
+                const workbook = XLSX.utils.book_new();
+                const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
+                
+                // 定义数字列（金额列）的索引
+                const numberColumns = [4, 6, 7, 8, 9, 10, 12, 13, 14]; // 基于0的索引
+                
+                // 为数字列设置单元格格式
+                const range = XLSX.utils.decode_range(worksheet['!ref']);
+                for (let row = range.s.r + 1; row <= range.e.r; row++) {
+                    for (const col of numberColumns) {
+                        const cellAddress = XLSX.utils.encode_cell({r: row, c: col});
+                        const cell = worksheet[cellAddress];
+                        
+                        if (cell && cell.v !== null && cell.v !== '') {
+                            // 设置单元格类型为数字
+                            cell.t = 'n'; // n表示数字类型
+                            
+                            // 设置单元格格式为会计格式（带千位分隔符，2位小数）
+                            cell.z = '#,##0.00';
+                            
+                            // 对于负值，设置红色显示（可选）
+                            if (cell.v < 0) {
+                                cell.s = {
+                                    font: { color: { rgb: "FF0000" } }
+                                };
+                            }
+                        }
+                    }
+                }
+                
+                // 设置列宽
+                const colWidths = [
+                    { wch: 15 },  // Settlement ID
+                    { wch: 30 },  // Processing Period
+                    { wch: 15 },  // Wallet ID
+                    { wch: 15 },  // Processing Currency
+                    { wch: 20 },  // TRANSACTION TOTAL AMOUNT
+                    { wch: 15 },  // Settlement Currency
+                    { wch: 20 },  // SETTLEMENT TOTAL AMOUNT
+                    { wch: 18 },  // TOTAL ACQUIRER FEE
+                    { wch: 15 },  // TOTAL NET AMOUNT
+                    { wch: 20 },  // Rolling Reserve held
+                    { wch: 20 },  // Rolling Reserve released
+                    { wch: 30 },  // Rolling Reserve released Period
+                    { wch: 12 },  // Wire fee
+                    { wch: 12 },  // Other
+                    { wch: 15 },  // GRAND TOTAL
+                    { wch: 25 },  // Site
+                    { wch: 30 }   // Source File
+                ];
+                
+                worksheet['!cols'] = colWidths;
+                
+                // 将工作表添加到工作簿
+                XLSX.utils.book_append_sheet(workbook, worksheet, '结算单信息');
+                
+                // 生成文件名
+                const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+                const fileName = `结算单金额汇总_${dateStr}_${gAmountData.length}条记录.xlsx`;
+                
+                // 导出文件
+                XLSX.writeFile(workbook, fileName);
+                
+                alert(currentLang === 'zh' ? 
+                    `文件已导出: ${fileName}，包含 ${gAmountData.length} 条记录，数字已正确格式化为数值类型` :
+                    `File exported: ${fileName}, containing ${gAmountData.length} records, numbers formatted as numeric type`);
+            } catch (error) {
+                console.error(currentLang === 'zh' ? '导出Excel时出错:' : 'Error exporting Excel:', error);
+                alert(currentLang === 'zh' ? `导出Excel时出错: ${error.message}` : `Error exporting Excel: ${error.message}`);
+            }
+        }
+        
+        /* ---------- 通用报表重置 ---------- */
+        function resetGeneralTool() {
+            document.getElementById('generalFileInput').value = '';
+            document.getElementById('generalSelectedFiles').textContent = '';
+            document.getElementById('generalTableBody').innerHTML = '';
+            document.getElementById('generalTableHeader').innerHTML = '';
+            document.getElementById('amountTableBody').innerHTML = '';
+            document.getElementById('generalTableContainer').style.display = 'none';
+            document.getElementById('generalPreviewTable').style.display = 'none';
+            document.getElementById('amountTableContainer').style.display = 'none';
+            document.getElementById('amountPreviewTable').style.display = 'none';
+            document.getElementById('reportTabs').style.display = 'none';
+            document.getElementById('downloadGeneralBtn').style.display = 'none';
+            document.getElementById('downloadTransactionsBtn').style.display = 'none';
+            document.getElementById('downloadAmountBtn').style.display = 'none';
+            document.getElementById('generalSummary').style.display = 'none';
+            gGeneralRows = [];
+            gGeneralHeaders = [];
+            gAmountData = [];
+        }
+        
+        // ==================== IC++ Report Functions ====================
+
+        let gTransactionFormattedRows = []; // 保存格式化后的交易信息（用于显示和导出）
+
+        // ==================== IC++ 金额汇总相关函数 ====================
+
+        /** 从文件名提取Settlement ID */
+        function extractSettlementIdFromFileName(fileName) {
+            const parts = fileName.split('_');
+            if (parts.length >= 7) {
+                return parts[parts.length - 2];
+            }
+
+            const match = fileName.match(/(\d{10,})/);
+            return match ? match[1] : '';
+        }
+
+        /** 格式化日期字符串，移除时间部分 */
+        function formatDateWithoutTime(dateStr) {
+            if (!dateStr) return '';
+            const withoutTime = dateStr.replace(/\s\d{2}:\d{2}/g, '');
+            return withoutTime.trim();
+        }
+
+        /** 提取结算日期（格式：dd.mm.yyyy） */
+        function extractSettlementDate(dateStr) {
+            if (!dateStr) return '';
+            const match = dateStr.match(/(\d{1,2}\.\d{1,2}\.\d{4})/);
+            return match ? match[1] : '';
+        }
+
+        /** 格式化百分比（用于显示） */
+        function formatPercentForDisplay(value) {
+            if (!value && value !== 0) return '';
+
+            const strValue = String(value).trim();
+            const cleanValue = strValue.replace(/[^\d.-]/g, '');
+            const num = parseFloat(cleanValue);
+
+            if (isNaN(num)) return strValue;
+
+            const percent = num * 100;
+            return `${percent}%`;
+        }
+
+        /** 清理百分比字符串为小数（用于导出） */
+        function cleanPercentForExport(value) {
+            if (!value && value !== 0) return null;
+
+            const strValue = String(value).trim();
+            if (strValue === '') return null;
+
+            const cleanValue = strValue.replace(/[^\d.-]/g, '');
+            if (cleanValue === '' || cleanValue === '-') return null;
+
+            const num = parseFloat(cleanValue);
+
+            if (isNaN(num)) return null;
+
+            if (num > 1) {
+                return num / 100;
+            }
+
+            return num;
+        }
+
+        /** 从IC++工作表中提取结算单信息（用于金额汇总） */
+        function extractIcplusInfoFromSheet(sheetData, fileName, sheetName) {
+            const settlementId = extractSettlementIdFromFileName(fileName);
+
+            const baseInfo = {
+                settlementId: settlementId || '',
+                settlementDate: '',
+                capturedPeriod: '',
+                walletId: '',
+                processingCurrency: '',
+                transactionAmount: '',
+                settlementCurrency: '',
+                settlementAmount: '',
+                interchangeFee: '',
+                schemeFee: '',
+                acquirerFee: '',
+                totalNetAmount: '',
+                rrPercent: '',
+                rollingReserveHeld: '',
+                rollingReserveReleased: '',
+                reserveReleasedPeriod: '',
+                wireFee: '',
+                otherFee: '',
+                grandTotal: '',
+                site: '',
+                sourceFile: fileName,
+                sheetName: sheetName
+            };
+
+            let foundData = false;
+
+            // 遍历所有行提取信息
+            for (let rowIndex = 0; rowIndex < sheetData.length; rowIndex++) {
+                const row = sheetData[rowIndex];
+                if (!row || row.length === 0) continue;
+
+                // 逐单元格检查
+                for (let colIndex = 0; colIndex < row.length; colIndex++) {
+                    const cell = row[colIndex];
+                    const cellStr = String(cell).trim();
+
+                    if (!cellStr) continue;
+
+                    // 提取Settlement Date
+                    if (cellStr.includes('Settlement Date:')) {
+                        const match = cellStr.match(/Settlement Date:\s*([^\s]+)/i);
+                        if (match && match[1]) {
+                            baseInfo.settlementDate = extractSettlementDate(match[1].trim());
+                            foundData = true;
+                        }
+                    }
+
+                    // 提取Processing Period
+                    if (cellStr.includes('Processing Period:')) {
+                        const match = cellStr.match(/Processing Period:\s*(.+)/i);
+                        if (match && match[1]) {
+                            baseInfo.capturedPeriod = formatDateWithoutTime(match[1].trim());
+                            foundData = true;
+                        }
+                    }
+
+                    // 提取Wallet ID
+                    if (cellStr.includes('Wallet ID:')) {
+                        if (colIndex + 1 < row.length && row[colIndex + 1]) {
+                            baseInfo.walletId = String(row[colIndex + 1]).trim();
+                            foundData = true;
+                        }
+                    }
+
+                    // 提取Processing Currency - 保持原值（大写）
+                    if (cellStr.includes('Processing Currency:')) {
+                        const match = cellStr.match(/Processing Currency:\s*([^\s]+)/i);
+                        if (match && match[1]) {
+                            baseInfo.processingCurrency = match[1].trim();
+                            foundData = true;
+                        }
+                    }
+
+                    // 提取Settlement Currency - 保持原值（大写）
+                    if (cellStr.includes('Settlement Currency:')) {
+                        const match = cellStr.match(/Settlement Currency:\s*([^\s]+)/i);
+                        if (match && match[1]) {
+                            baseInfo.settlementCurrency = match[1].trim();
+                            foundData = true;
+                        }
+                    }
+
+                    // 提取Site
+                    if (cellStr.includes('Site:')) {
+                        const match = cellStr.match(/Site:\s*(.+)/i);
+                        if (match && match[1]) {
+                            baseInfo.site = match[1].trim();
+                            foundData = true;
+                        }
+                    }
+                }
+
+                // 检查是否为Total行（使用不区分大小写的比较）
+                const rowStr = row.join(' ').toLowerCase();
+
+                // 查找Total行
+                if (rowStr.includes('total') && !rowStr.includes('grand total') && row.length > 10) {
+                    // Transaction Amount (G列，索引6)
+                    if (row.length > 6 && row[6] !== '' && row[6] !== null) {
+                        baseInfo.transactionAmount = String(row[6]).trim();
+                    }
+
+                    // Settlement Amount (I列，索引8)
+                    if (row.length > 8 && row[8] !== '' && row[8] !== null) {
+                        baseInfo.settlementAmount = String(row[8]).trim();
+                    }
+
+                    // Settlement Currency (J列，索引9)
+                    if (row.length > 9 && row[9] !== '' && row[9] !== null) {
+                        baseInfo.settlementCurrency = String(row[9]).trim();
+                    }
+
+                    // Interchange Fee (K列，索引10)
+                    if (row.length > 10 && row[10] !== '' && row[10] !== null) {
+                        baseInfo.interchangeFee = String(row[10]).trim();
+                    }
+
+                    // Scheme Fee (L列，索引11)
+                    if (row.length > 11 && row[11] !== '' && row[11] !== null) {
+                        baseInfo.schemeFee = String(row[11]).trim();
+                    }
+
+                    // Acquirer Fee (M列，索引12)
+                    if (row.length > 12 && row[12] !== '' && row[12] !== null) {
+                        baseInfo.acquirerFee = String(row[12]).trim();
+                    }
+
+                    // TOTAL NET AMOUNT (O列，索引14)
+                    if (row.length > 14 && row[14] !== '' && row[14] !== null) {
+                        baseInfo.totalNetAmount = String(row[14]).trim();
+                    }
+
+                    foundData = true;
+                }
+
+                // 查找Rolling Reserve行
+                if (rowStr.includes('rolling reserve') && !rowStr.includes('release')) {
+                    // RR比例 (F列，索引5)
+                    if (row.length > 5 && row[5] !== '' && row[5] !== null) {
+                        baseInfo.rrPercent = String(row[5]).trim();
+                    }
+
+                    // Rolling Reserve held金额 (O列，索引14)
+                    if (row.length > 14 && row[14] !== '' && row[14] !== null) {
+                        baseInfo.rollingReserveHeld = String(row[14]).trim();
+                    }
+
+                    foundData = true;
+                }
+
+                // 查找Release rolling reserve行 - 优化识别
+                if (rowStr.includes('release rolling reserve') ||
+                    (row[4] && String(row[4]).toLowerCase().includes('release rolling reserve'))) {
+
+                    // Release金额 (O列，索引14)
+                    if (row.length > 14 && row[14] !== '' && row[14] !== null) {
+                        baseInfo.rollingReserveReleased = String(row[14]).trim();
+                    }
+
+                    // 提取期间 - 直接从包含日期的文本中提取
+                    for (let i = 0; i < row.length; i++) {
+                        const cellText = String(row[i] || '');
+                        const datePattern = /\d{1,2}\.\d{1,2}\.\d{4}\s*\d{2}:\d{2}\s*-\s*\d{1,2}\.\d{1,2}\.\d{4}\s*\d{2}:\d{2}/;
+                        const match = cellText.match(datePattern);
+                        if (match) {
+                            baseInfo.reserveReleasedPeriod = formatDateWithoutTime(match[0]);
+                            break;
+                        }
+                    }
+
+                    foundData = true;
+                }
+
+                // 查找Wire fee / Wire Fix Sum Pay - 优化识别
+                if (rowStr.includes('wire fee') ||
+                    rowStr.includes('wire fix sum') ||
+                    rowStr.includes('wire transfer') ||
+                    (row[4] && String(row[4]).toLowerCase().includes('wire'))) {
+
+                    if (row.length > 14 && row[14] !== '' && row[14] !== null) {
+                        baseInfo.wireFee = String(row[14]).trim();
+                        foundData = true;
+                    }
+                }
+
+                // 查找Grand total行
+                if (rowStr.includes('grand total settlement amount')) {
+                    if (row.length > 14 && row[14] !== '' && row[14] !== null) {
+                        baseInfo.grandTotal = String(row[14]).trim();
+                        foundData = true;
+                    }
+                }
+            }
+
+            if (!foundData) {
+                return null;
+            }
+
+            return baseInfo;
+        }
+
+        /** 显示IC++金额汇总表格 */
+        function displayIcplusAmountTable() {
+            const amountTbody = document.querySelector('#icplusAmountTableBody');
+            amountTbody.innerHTML = '';
+
+            gIcplusAmountData.forEach((rowData) => {
+                const row = document.createElement('tr');
+
+                // Settlement ID
+                const td1 = document.createElement('td');
+                td1.textContent = rowData.settlementId || '';
+                row.appendChild(td1);
+
+                // Settlement Date
+                const td2 = document.createElement('td');
+                td2.textContent = rowData.settlementDate || '';
+                row.appendChild(td2);
+
+                // Processing Period
+                const td3 = document.createElement('td');
+                td3.textContent = rowData.capturedPeriod || '';
+                row.appendChild(td3);
+
+                // Wallet ID
+                const td4 = document.createElement('td');
+                td4.textContent = rowData.walletId || '';
+                row.appendChild(td4);
+
+                // Processing Currency
+                const td5 = document.createElement('td');
+                td5.textContent = rowData.processingCurrency || '';
+                row.appendChild(td5);
+
+                // Transaction Amount
+                const td6 = document.createElement('td');
+                td6.className = 'amount-cell';
+                const transactionAmount = formatLargeNumber(rowData.transactionAmount);
+                td6.textContent = transactionAmount || '';
+                if (transactionAmount && transactionAmount.startsWith('-')) {
+                    td6.classList.add('negative-amount');
+                }
+                row.appendChild(td6);
+
+                // Settlement Currency
+                const td7 = document.createElement('td');
+                td7.textContent = rowData.settlementCurrency || '';
+                row.appendChild(td7);
+
+                // Settlement Amount
+                const td8 = document.createElement('td');
+                td8.className = 'amount-cell';
+                const settlementAmount = formatLargeNumber(rowData.settlementAmount);
+                td8.textContent = settlementAmount || '';
+                if (settlementAmount && settlementAmount.startsWith('-')) {
+                    td8.classList.add('negative-amount');
+                }
+                row.appendChild(td8);
+
+                // Interchange Fee
+                const td9 = document.createElement('td');
+                td9.className = 'amount-cell';
+                const interchangeFee = formatLargeNumber(rowData.interchangeFee);
+                td9.textContent = interchangeFee || '';
+                if (interchangeFee && interchangeFee.startsWith('-')) {
+                    td9.classList.add('negative-amount');
+                }
+                row.appendChild(td9);
+
+                // Scheme Fee
+                const td10 = document.createElement('td');
+                td10.className = 'amount-cell';
+                const schemeFee = formatLargeNumber(rowData.schemeFee);
+                td10.textContent = schemeFee || '';
+                if (schemeFee && schemeFee.startsWith('-')) {
+                    td10.classList.add('negative-amount');
+                }
+                row.appendChild(td10);
+
+                // Acquirer Fee
+                const td11 = document.createElement('td');
+                td11.className = 'amount-cell';
+                const acquirerFee = formatLargeNumber(rowData.acquirerFee);
+                td11.textContent = acquirerFee || '';
+                if (acquirerFee && acquirerFee.startsWith('-')) {
+                    td11.classList.add('negative-amount');
+                }
+                row.appendChild(td11);
+
+                // TOTAL NET AMOUNT
+                const td12 = document.createElement('td');
+                td12.className = 'amount-cell';
+                const netAmount = formatLargeNumber(rowData.totalNetAmount);
+                td12.textContent = netAmount || '';
+                if (netAmount && netAmount.startsWith('-')) {
+                    td12.classList.add('negative-amount');
+                }
+                row.appendChild(td12);
+
+                // RR%
+                const td13 = document.createElement('td');
+                td13.className = 'percent-cell';
+                td13.textContent = formatPercentForDisplay(rowData.rrPercent) || '';
+                row.appendChild(td13);
+
+                // Rolling Reserve held
+                const td14 = document.createElement('td');
+                td14.className = 'amount-cell';
+                const reserveHeld = formatLargeNumber(rowData.rollingReserveHeld);
+                td14.textContent = reserveHeld || '';
+                if (reserveHeld && reserveHeld.startsWith('-')) {
+                    td14.classList.add('negative-amount');
+                }
+                row.appendChild(td14);
+
+                // Rolling Reserve released
+                const td15 = document.createElement('td');
+                td15.className = 'amount-cell';
+                const reserveReleased = formatLargeNumber(rowData.rollingReserveReleased);
+                td15.textContent = reserveReleased || '';
+                if (reserveReleased && reserveReleased.startsWith('-')) {
+                    td15.classList.add('negative-amount');
+                }
+                row.appendChild(td15);
+
+                // Rolling Reserve released Period
+                const td16 = document.createElement('td');
+                td16.textContent = rowData.reserveReleasedPeriod || '';
+                row.appendChild(td16);
+
+                // Wire fee
+                const td17 = document.createElement('td');
+                td17.className = 'amount-cell';
+                const wireFee = formatLargeNumber(rowData.wireFee);
+                td17.textContent = wireFee || '';
+                if (wireFee && wireFee.startsWith('-')) {
+                    td17.classList.add('negative-amount');
+                }
+                row.appendChild(td17);
+
+                // Other
+                const td18 = document.createElement('td');
+                td18.className = 'amount-cell';
+                const otherFee = formatLargeNumber(rowData.otherFee);
+                td18.textContent = otherFee || '';
+                if (otherFee && otherFee.startsWith('-')) {
+                    td18.classList.add('negative-amount');
+                }
+                row.appendChild(td18);
+
+                // GRAND TOTAL
+                const td19 = document.createElement('td');
+                td19.className = 'amount-cell';
+                const grandTotal = formatLargeNumber(rowData.grandTotal);
+                td19.textContent = grandTotal || '';
+                if (grandTotal && grandTotal.startsWith('-')) {
+                    td19.classList.add('negative-amount');
+                }
+                row.appendChild(td19);
+
+                // Site
+                const td20 = document.createElement('td');
+                td20.textContent = rowData.site || '';
+                td20.className = 'site-cell';
+                row.appendChild(td20);
+
+                // Source File
+                const td21 = document.createElement('td');
+                td21.textContent = rowData.sourceFile || '';
+                td21.style.whiteSpace = 'normal';
+                td21.style.maxWidth = '200px';
+                td21.style.wordBreak = 'break-all';
+                row.appendChild(td21);
+
+                amountTbody.appendChild(row);
+            });
+        }
+
+        /** 导出IC++金额汇总 Excel */
+        function downloadIcplusAmountExcel() {
+            if(!gIcplusAmountData.length){
+                alert(currentLang === 'zh' ? '没有可导出的金额数据' : 'No amount data available for export');
+                return;
+            }
+
+            try {
+                const worksheetData = [
+                    [
+                        'Settlement ID',
+                        'Settlement Date',
+                        'Processing Period',
+                        'Wallet ID',
+                        'Processing Currency',
+                        'Transaction Amount',
+                        'Settlement Currency',
+                        'Settlement Amount',
+                        'Interchange Fee',
+                        'Scheme Fee',
+                        'Acquirer Fee',
+                        'TOTAL NET AMOUNT',
+                        'RR%',
+                        'Rolling Reserve held',
+                        'Rolling Reserve released',
+                        'Rolling Reserve released Period',
+                        'Wire fee',
+                        'Other',
+                        'GRAND TOTAL',
+                        'Site',
+                        'Source File'
+                    ]
+                ];
+
+                gIcplusAmountData.forEach(item => {
+                    worksheetData.push([
+                        item.settlementId || '',
+                        item.settlementDate || '',
+                        item.capturedPeriod || '',
+                        item.walletId || '',
+                        item.processingCurrency || '',
+                        cleanNumberForExport(item.transactionAmount),
+                        item.settlementCurrency || '',
+                        cleanNumberForExport(item.settlementAmount),
+                        cleanNumberForExport(item.interchangeFee),
+                        cleanNumberForExport(item.schemeFee),
+                        cleanNumberForExport(item.acquirerFee),
+                        cleanNumberForExport(item.totalNetAmount),
+                        cleanPercentForExport(item.rrPercent),
+                        cleanNumberForExport(item.rollingReserveHeld),
+                        cleanNumberForExport(item.rollingReserveReleased),
+                        item.reserveReleasedPeriod || '',
+                        cleanNumberForExport(item.wireFee),
+                        cleanNumberForExport(item.otherFee),
+                        cleanNumberForExport(item.grandTotal),
+                        item.site || '',
+                        item.sourceFile || ''
+                    ]);
+                });
+
+                const workbook = XLSX.utils.book_new();
+                const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
+
+                // 定义数字列（金额列）的索引
+                const numberColumns = [5, 7, 8, 9, 10, 11, 13, 14, 16, 17, 18];
+                const percentColumn = 12;
+
+                const range = XLSX.utils.decode_range(worksheet['!ref']);
+                for (let row = range.s.r + 1; row <= range.e.r; row++) {
+                    for (const col of numberColumns) {
+                        const cellAddress = XLSX.utils.encode_cell({r: row, c: col});
+                        const cell = worksheet[cellAddress];
+
+                        if (cell && cell.v !== null && cell.v !== '') {
+                            cell.t = 'n';
+                            cell.z = '#,##0.00';
+
+                            if (cell.v < 0) {
+                                cell.s = {
+                                    font: { color: { rgb: "FF0000" } }
+                                };
+                            }
+                        }
+                    }
+
+                    const percentCellAddress = XLSX.utils.encode_cell({r: row, c: percentColumn});
+                    const percentCell = worksheet[percentCellAddress];
+
+                    if (percentCell && percentCell.v !== null && percentCell.v !== '') {
+                        percentCell.t = 'n';
+                        percentCell.z = '0.00%';
+                    }
+                }
+
+                const colWidths = [
+                    { wch: 15 },  // Settlement ID
+                    { wch: 12 },  // Settlement Date
+                    { wch: 25 },  // Processing Period
+                    { wch: 12 },  // Wallet ID
+                    { wch: 18 },  // Processing Currency
+                    { wch: 18 },  // Transaction Amount
+                    { wch: 18 },  // Settlement Currency
+                    { wch: 18 },  // Settlement Amount
+                    { wch: 15 },  // Interchange Fee
+                    { wch: 12 },  // Scheme Fee
+                    { wch: 15 },  // Acquirer Fee
+                    { wch: 18 },  // TOTAL NET AMOUNT
+                    { wch: 8 },   // RR%
+                    { wch: 18 },  // Rolling Reserve held
+                    { wch: 20 },  // Rolling Reserve released
+                    { wch: 30 },  // Rolling Reserve released Period
+                    { wch: 12 },  // Wire fee
+                    { wch: 12 },  // Other
+                    { wch: 15 },  // GRAND TOTAL
+                    { wch: 25 },  // Site
+                    { wch: 35 }   // Source File
+                ];
+
+                worksheet['!cols'] = colWidths;
+                XLSX.utils.book_append_sheet(workbook, worksheet, 'IC++结算单信息');
+
+                const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+                const fileName = `IC++结算单信息_${dateStr}_${gIcplusAmountData.length}条记录.xlsx`;
+
+                XLSX.writeFile(workbook, fileName);
+
+                alert(currentLang === 'zh' ?
+                    `文件已导出: ${fileName}，包含 ${gIcplusAmountData.length} 条记录` :
+                    `File exported: ${fileName}, containing ${gIcplusAmountData.length} records`);
+            } catch (error) {
+                console.error(currentLang === 'zh' ? '导出Excel时出错:' : 'Error exporting Excel:', error);
+                alert(currentLang === 'zh' ? `导出Excel时出错: ${error.message}` : `Error exporting Excel: ${error.message}`);
+            }
+        }
+        
+        /* ---------- 交易信息提取函数 ---------- */
+        function extractTransactions(raw, fileName){
+            const transactions = [];
+            
+            // 找到表头行（包含"Order ID"的行）
+            const headerRowIndex = raw.findIndex(row => 
+                row[0] && row[0].toString().includes('Order ID')
+            );
+            
+            if (headerRowIndex === -1) return transactions;
+            
+            // 获取表头
+            const headers = raw[headerRowIndex];
+            
+            // 从表头下一行开始提取数据，直到遇到空行或Total行
+            for (let i = headerRowIndex + 1; i < raw.length; i++) {
+                const row = raw[i];
+                
+                // 跳过空行和Total行
+                if (!row || row.length === 0 || (row[0] && row[0].toString().includes('Total'))) {
+                    continue;
+                }
+                
+                // 检查是否是数据行（Order ID应该是数字或包含数字）
+                if (row[0] && (row[0].toString().match(/\d+\.\d+/) || row[0].toString().match(/\d+/))) {
+                    const transaction = {};
+                    
+                    // 提取所有列的数据
+                    headers.forEach((header, index) => {
+                        if (header && header.toString().trim()) {
+                            const value = row[index] !== undefined ? row[index] : '';
+                            transaction[header.toString().trim()] = value;
+                        }
+                    });
+                    
+                    if (Object.keys(transaction).length > 0) {
+                        transactions.push(transaction);
+                    }
+                }
+            }
+            
+            return transactions;
+        }
+        
+        /* ---------- 交易信息预览 ---------- */
+        async function previewTransactions(){
+            const files = Array.from(document.getElementById('icplusFileInput').files);
+            if(!files.length){
+                alert(currentLang === 'zh' ? '请先选择文件' : 'Please upload report files first');
+                return;
+            }
+
+            gTransactionFormattedRows = [];
+            gIcplusAmountData = [];
+            const tbody = document.querySelector('#icplusTableBody');
+            tbody.innerHTML = '';
+            const amountTbody = document.querySelector('#icplusAmountTableBody');
+            amountTbody.innerHTML = '';
+
+            let totalTransactions = 0;
+            let amountRecords = 0;
+
+            for (const file of files){
+                try {
+                    // 从文件名提取settlement ID
+                    const settlementId = file.name.match(/.*_(\d+)_.*\.xlsx$/)?.[1] || '';
+
+                    const data = await file.arrayBuffer();
+                    const wb   = XLSX.read(data, {type:'array'});
+
+                    // ===== 提取交易数据 =====
+                    // 查找Transaction Report sheet
+                    const transactionSheetName = wb.SheetNames.find(name =>
+                        name.toLowerCase().includes('transaction')
+                    );
+
+                    if (transactionSheetName) {
+                        const ws = wb.Sheets[transactionSheetName];
+                        const raw = XLSX.utils.sheet_to_json(ws, {header:1, defval:''});
+                        const transactions = extractTransactions(raw, file.name);
+
+                        transactions.forEach(transaction => {
+                            // 格式化数据（用于显示和导出）
+                            const formattedRow = [
+                                transaction['Order ID'] || '',
+                                formatExcelDate(transaction['Date']) || '', // 格式化日期
+                                transaction['Type'] || '',
+                                formatNumberForExport(transaction['Transaction Amount']) || '', // 数字格式
+                                transaction['Transaction Currency'] || '',
+                                formatNumberForExport(transaction['Settlement Amount']) || '', // 数字格式
+                                transaction['Settlement Currency'] || '',
+                                formatNumberForExport(transaction['Interchange Fee']) || '', // 数字格式，保留2位小数
+                                formatNumberForExport(transaction['Scheme Fee']) || '', // 数字格式，保留2位小数
+                                formatNumberForExport(transaction['Acquirer Fee']) || '', // 数字格式，保留2位小数
+                                formatNumberForExport(transaction['Fees']) || '', // 数字格式
+                                formatNumberForExport(transaction['Net Amount']) || '', // 数字格式
+                                transaction['Card Brand'] || '',
+                                transaction['Card Product'] || '',
+                                transaction['Card Number'] || '',
+                                transaction['Card Holder'] || '',
+                                transaction['Card Issuer'] || '',
+                                transaction['Card Country'] || '',
+                                transaction['Customer Country'] || '',
+                                transaction['3DS'] || '',
+                                transaction['MerchantOrderID'] || '',
+                                transaction['ARN'] || '',
+                                transaction['Wallet ID'] || '',
+                                transaction['Region'] || '',
+                                transaction['Details'] || '',
+                                settlementId
+                            ];
+
+                            gTransactionFormattedRows.push(formattedRow);
+                            totalTransactions++;
+
+                            // 创建显示行（添加千分位格式）
+                            const displayRow = [
+                                transaction['Order ID'] || '',
+                                formatExcelDate(transaction['Date']) || '',
+                                transaction['Type'] || '',
+                                formatLargeNumber(transaction['Transaction Amount']) || '',
+                                transaction['Transaction Currency'] || '',
+                                formatLargeNumber(transaction['Settlement Amount']) || '',
+                                transaction['Settlement Currency'] || '',
+                                formatNumber(transaction['Interchange Fee']) || '',
+                                formatNumber(transaction['Scheme Fee']) || '',
+                                formatNumber(transaction['Acquirer Fee']) || '',
+                                formatNumber(transaction['Fees']) || '',
+                                formatLargeNumber(transaction['Net Amount']) || '',
+                                transaction['Card Brand'] || '',
+                                transaction['Card Product'] || '',
+                                transaction['Card Number'] || '',
+                                transaction['Card Holder'] || '',
+                                transaction['Card Issuer'] || '',
+                                transaction['Card Country'] || '',
+                                transaction['Customer Country'] || '',
+                                transaction['3DS'] || '',
+                                transaction['MerchantOrderID'] || '',
+                                transaction['ARN'] || '',
+                                transaction['Wallet ID'] || '',
+                                transaction['Region'] || '',
+                                transaction['Details'] || '',
+                                settlementId
+                            ];
+
+                            const tr = document.createElement('tr');
+                            displayRow.forEach(v=>{
+                                const td = document.createElement('td');
+                                td.textContent = v;
+                                tr.appendChild(td);
+                            });
+                            tbody.appendChild(tr);
+                        });
+
+                        console.log(currentLang === 'zh' ?
+                            `从文件 ${file.name} 提取了 ${transactions.length} 条交易记录，Settlement ID: ${settlementId}` :
+                            `Extracted ${transactions.length} transaction records from ${file.name}, Settlement ID: ${settlementId}`);
+                    } else {
+                        console.warn(currentLang === 'zh' ? '未找到Transaction Report sheet:' : 'Transaction Report sheet not found:', file.name);
+                    }
+
+                    // ===== 提取金额汇总数据 =====
+                    // 只处理 Settlement Report 工作表，避免重复
+                    let targetSheetName = null;
+                    for (let i = 0; i < wb.SheetNames.length; i++) {
+                        const sheetName = wb.SheetNames[i];
+                        if (sheetName.toLowerCase().includes('settlement')) {
+                            targetSheetName = sheetName;
+                            break;
+                        }
+                    }
+
+                    if (targetSheetName) {
+                        const worksheet = wb.Sheets[targetSheetName];
+                        const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: '' });
+
+                        const sheetInfo = extractIcplusInfoFromSheet(jsonData, file.name, targetSheetName);
+                        if (sheetInfo) {
+                            gIcplusAmountData.push(sheetInfo);
+                            amountRecords++;
+                        }
+                    }
+
+                } catch (e) {
+                    console.error(currentLang === 'zh' ? '处理文件出错:' : 'Error processing file:', file.name, e);
+                }
+            }
+
+            // 显示金额汇总表格
+            if (gIcplusAmountData.length > 0) {
+                displayIcplusAmountTable();
+                document.getElementById('icplusAmountTableContainer').style.display = 'block';
+                document.getElementById('icplusAmountPreviewTable').style.display = 'table';
+            }
+
+            // 显示交易数据表格
+            if (gTransactionFormattedRows.length > 0) {
+                document.getElementById('icplusTableContainer').style.display = 'block';
+                document.getElementById('icplusPreviewTable').style.display = 'table';
+            }
+
+            // 显示标签页容器
+            document.getElementById('icplusReportTabs').style.display = 'block';
+
+            // 显示导出按钮
+            document.getElementById('downloadIcplusBtn').style.display = 'block';
+            document.getElementById('downloadIcplusTransactionsBtn').style.display = 'block';
+            document.getElementById('downloadIcplusAmountBtn').style.display = 'block';
+            document.getElementById('icplusSummary').style.display = 'block';
+
+            // 更新摘要信息
+            const summaryText = currentLang === 'zh' ?
+                `已提取 ${totalTransactions} 条交易记录，${amountRecords} 条金额记录` :
+                `Extracted ${totalTransactions} transaction records, ${amountRecords} amount records`;
+            document.getElementById('icplusSummaryText').textContent = summaryText;
+
+            alert((currentLang === 'zh' ? '共提取了 ' : 'Extracted ') + totalTransactions +
+                  (currentLang === 'zh' ? ' 条交易记录和 ' : ' transaction records and ') +
+                  amountRecords + (currentLang === 'zh' ? ' 条金额记录' : ' amount records'));
+        }
+        
+        /* ---------- IC++导出Excel（兼容旧版） ---------- */
+        function downloadIcplusExcel() {
+            // 根据当前标签页决定导出哪个报表
+            if (currentIcplusTab === 'transactions') {
+                downloadIcplusTransactionExcel();
+            } else {
+                downloadIcplusAmountExcel();
+            }
+        }
+
+        /* ---------- 导出IC++交易信息 Excel ---------- */
+        function downloadIcplusTransactionExcel(){
+            if(!gTransactionFormattedRows.length){
+                alert(currentLang === 'zh' ? '没有可导出的交易数据' : 'No transaction data available for export');
+                return;
+            }
+
+            const headers = [
+                'Order ID', 'Date', 'Type', 'Transaction Amount', 'Transaction Currency',
+                'Settlement Amount', 'Settlement Currency', 'Interchange Fee', 'Scheme Fee',
+                'Acquirer Fee', 'Fees', 'Net Amount', 'Card Brand', 'Card Product',
+                'Card Number', 'Card Holder', 'Card Issuer', 'Card Country', 'Customer Country',
+                '3DS', 'MerchantOrderID', 'ARN', 'Wallet ID', 'Region', 'Details', 'Settlement ID'
+            ];
+
+            // 创建工作表数据 - 使用已经格式化的数据
+            const ws_data = [headers];
+            ws_data.push(...gTransactionFormattedRows);
+
+            // 创建工作表
+            const ws = XLSX.utils.aoa_to_sheet(ws_data);
+
+            // 创建工作簿
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, 'Transactions');
+
+            // 写入文件
+            XLSX.writeFile(wb, 'icplus_transactions.xlsx');
+        }
+        
+        /* ---------- IC++报表重置 ---------- */
+        function resetIcplusTool(){
+            document.getElementById('icplusFileInput').value = '';
+            document.getElementById('icplusSelectedFiles').textContent = '';
+            document.getElementById('icplusTableBody').innerHTML = '';
+            document.getElementById('icplusTableContainer').style.display = 'none';
+            document.getElementById('icplusPreviewTable').style.display = 'none';
+            document.getElementById('icplusAmountTableBody').innerHTML = '';
+            document.getElementById('icplusAmountTableContainer').style.display = 'none';
+            document.getElementById('icplusAmountPreviewTable').style.display = 'none';
+            document.getElementById('icplusReportTabs').style.display = 'none';
+            document.getElementById('downloadIcplusBtn').style.display = 'none';
+            document.getElementById('downloadIcplusTransactionsBtn').style.display = 'none';
+            document.getElementById('downloadIcplusAmountBtn').style.display = 'none';
+            document.getElementById('icplusSummary').style.display = 'none';
+            gTransactionFormattedRows = [];
+            gIcplusAmountData = [];
+        }
+        
+        // ==================== General Report Helper Functions ====================
+        
+        /** 从 Excel 前几行抽取 Meta 资讯 */
+        function extractMeta(file) {
+            const meta = {};
+            file.forEach(row => {
+                const line = row.join(" ");
+                if (line.includes("Site:")) meta["Site"] = line.split("Site:")[1].trim();
+                if (line.includes("Acquirer:")) meta["Acquirer"] = line.split("Acquirer:")[1].trim();
+                if (line.includes("Settlement ID:")) meta["Settlement ID"] = line.split("Settlement ID:")[1].trim();
+                if (line.includes("Settlement Date:")) meta["Settlement Date"] = line.split("Settlement Date:")[1].trim();
+                if (line.includes("Captured Period:")) meta["Captured Period"] = line.split("Captured Period:")[1].trim();
+                if (line.includes("Processing Currency:")) meta["Processing Currency"] = line.split("Processing Currency:")[1].trim();
+                if (line.includes("Settlement Currency:")) meta["Settlement Currency"] = line.split("Settlement Currency:")[1].trim();
+            });
+            return meta;
+        }
+
+        /** 从 Excel 抽取 Fee Meta */
+        function extractFee(file) {
+            const meta = {};
+            let start = false, end = false;
+
+            file.forEach(row => {
+                const line = row.join(" ");
+                if (line.includes("TOTAL NET AMOUNT")) start = true;
+                if (line.includes("GRAND TOTAL")) { start = false; end = true; }
+                if (start && !end) {
+                    const clearRow = row.filter(item => item !== "");
+                    if (clearRow.length >= 3) {
+                        const text = "Rolling Reserve held for the period"
+                        if (clearRow[0].includes(text)) {
+                            const splited = clearRow[0].split(text)
+                            meta[text] = `${clearRow[1]} ${clearRow[2]} (${splited[1]})`
+                            return
+                        }
+
+                        meta[clearRow[0].replace(/"/g, "").trim()] = `${clearRow[1]} ${clearRow[2]}`;
+                    }
+                }
+            });
+
+            return meta;
+        }
+
+        // 初始化页面
+        document.addEventListener('DOMContentLoaded', function() {
+            // 初始化拖拽上传
+            initDragDrop();
+            
+            // 初始语言设置
+            switchLanguage('zh');
+        });
+    </script>
+</body>
+</html>
